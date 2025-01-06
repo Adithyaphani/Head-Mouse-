@@ -1,0 +1,71 @@
+#include <Wire.h>
+#include <MPU6050.h>
+#include <HID-Project.h> // HID library for mouse emulation
+
+// Initialize MPU6050 object
+MPU6050 mpu;
+
+// Variables for storing raw sensor data
+int16_t ax, ay, az;
+int16_t gx, gy, gz;
+
+// Variables for cursor movement
+float cursorX = 0, cursorY = 0;
+float sensitivity = 0.02; // Sensitivity factor for cursor movement
+int deadzone = 200; // Gyroscope deadzone to filter small unintentional movements
+
+// Optional click threshold
+int clickThreshold = 3000; // Gyroscope Z-axis value for simulating a click
+bool isClicking = false;
+
+void setup() {
+  // Initialize communication
+  Wire.begin();
+  Serial.begin(9600);
+
+  // Initialize MPU6050
+  mpu.initialize();
+  if (!mpu.testConnection()) {
+    Serial.println("MPU6050 connection failed. Check wiring!");
+    while (1);
+  }
+  Serial.println("MPU6050 initialized successfully");
+
+  // Start mouse emulation
+  Mouse.begin();
+}
+
+void loop() {
+  // Read raw sensor data
+  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+
+  // Filter gyroscope data (apply deadzone)
+  float filteredGx = (abs(gx) > deadzone) ? gx : 0;
+  float filteredGy = (abs(gy) > deadzone) ? gy : 0;
+
+  // Map gyroscope values to cursor movement
+  cursorX = map(filteredGx, -32768, 32767, -10, 10) * sensitivity;
+  cursorY = map(filteredGy, -32768, 32767, -10, 10) * sensitivity;
+
+  // Send cursor movements
+  Mouse.move(cursorX, cursorY);
+
+  // Optional: Simulate left-click based on Z-axis rotation
+  if (gz > clickThreshold && !isClicking) {
+    Mouse.press(MOUSE_LEFT);
+    isClicking = true;
+  } else if (gz <= clickThreshold && isClicking) {
+    Mouse.release(MOUSE_LEFT);
+    isClicking = false;
+  }
+
+  // Debugging output for serial monitor
+  Serial.print("CursorX: ");
+  Serial.print(cursorX);
+  Serial.print(" CursorY: ");
+  Serial.print(cursorY);
+  Serial.print(" Click: ");
+  Serial.println(isClicking);
+
+  delay(20); // Adjust delay to control responsiveness
+}
