@@ -8,3 +8,4 @@ movements into cursor movements, enabling users to control devices without conve
 input methods. The system also integrates connectivity features, providing flexibility for use 
 in various environments. Furthermore, it incorporates a lithium battery charging mechanism 
 (03962A) to ensure sustained and reliable power, enhancing its portability
+
